@@ -1,15 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
-    <title>我的LaTeX证明</title>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>proof</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <script src="/usr/share/javascript/mathjax/MathJax.js?config=TeX-AMS_CHTML-full" type="text/javascript"></script>
 </head>
 <body>
-    <h1>我的LaTeX证明</h1>
-    <p>这是一个LaTeX公式示例：</p>
-    \[
-    E = mc^2
-    \]
+<h1 id="app:proof-gme">Theoretical Analysis of GME Exploration Bonuses</h1>
+<h2 id="app:optimistic-lsvi">Background: Linear MDP and LSVI-UCB</h2>
+<p>In linear MDPs, transition kernels and the reward function are assumed to be linear. <span class="citation" data-cites="jin2020provably"></span> formalizes the definition of linear MDPs as follows:</p>
+<p><span id="definition:linear" label="definition:linear">[definition:linear]</span> An MDP <span class="math inline">\((\mathcal{S}, \mathcal{A}, H, \mathcal{P}, r)\)</span> is a <em>linear MDP</em> with a feature map <span class="math inline">\(\bm{\phi}: \mathcal{S} \times \mathcal{A} \rightarrow \mathbb{R}^d\)</span> if for any <span class="math inline">\(h \in [H]\)</span>, there exist <span class="math inline">\(d\)</span> <em>unknown</em> (signed) measures <span class="math inline">\(\bm{\mu}_h = (\mu_h^{(1)}, \ldots, \mu_h^{(d)})\)</span> over <span class="math inline">\(\mathcal{S}\)</span> and an <em>unknown</em> vector <span class="math inline">\(\bm{\theta}_h \in \mathbb{R}^d\)</span>, such that for any <span class="math inline">\((x, a) \in \mathcal{S} \times \mathcal{A}\)</span>: <span class="math display">\[\begin{aligned}
+\label{eq:linear_transition}  
+\mathcal{P}_h(\cdot| x, a) = \langle\bm{\phi}(x, a), \bm{\mu}_h(\cdot)\rangle, \qquad 
+r_h(x, a) = \langle\bm{\phi}(x, a), \bm{\theta}_h\rangle.  \end{aligned}\]</span></p>
+<p>In linear MDPs, LSVI-UCB <span class="citation" data-cites="jin2020provably"></span> achieves near-optimal worst-case regret. The key idea of LSVI-UCB is to use optimistic <span class="math inline">\(Q\)</span>-values obtained by adding an UCB bonus <span class="math inline">\(r^{\rm ucb}\)</span> to the estimated <span class="math inline">\(Q\)</span>-values. The UCB bonus is defined as: <span class="math display">\[r^{\rm ucb}_t = \beta \cdot \left[ \eta(s_t, a_t)^\top \Lambda_t^{-1} \eta(s_t, a_t) \right]^{\nicefrac{1}{2}},\]</span> where <span class="math inline">\(\beta\)</span> is a constant, <span class="math inline">\(\Lambda_t = \sum_{i=0}^{m} \eta(x_t^{i}, a_t^{i}) \eta(x_t^{i}, a_t^{i})^\top + \lambda \cdot \mathbf{I}\)</span> is the Gram matrix, and <span class="math inline">\(m\)</span> is the index of the current episode. The UCB bonus measures the epistemic uncertainty of state-action pairs and has been proven to be efficient. The LSVI-UCB algorithm is described in Algorithm <a href="#alg:lsvi" data-reference-type="ref" data-reference="alg:lsvi">[alg:lsvi]</a>. Each iteration of LSVI-UCB consists of two parts: first, in lines 3-6, the agent executes a policy based on <span class="math inline">\(Q_t\)</span>; second, in lines 7-11, the <span class="math inline">\(Q\)</span>-function parameters <span class="math inline">\(\chi_t\)</span> are updated via regularized least squares:</p>
+<p><span class="math display">\[\label{eq::1}
+\chi_t \leftarrow \arg\min_{\chi \in \mathbb{R}^d} \sum_{i=0}^{m} \left[ r_t(s_t^i, a_t^i) + \max_{a \in \mathcal{A}} Q_{t+1}(s_{t+1}^{i}, a) - \chi^\top \eta(s_t^{i}, a_t^{i}) \right]^2 + \lambda \|\chi\|^2,\]</span></p>
+<p>where <span class="math inline">\(m\)</span> is the number of episodes and <span class="math inline">\(i\)</span> is the episode index. This least squares problem has a closed-form solution: <span class="math display">\[\chi_t = \Lambda_t^{-1} \sum_{\tau=0}^{m} \eta(x_t^{i}, a_t^{i}) \left[ r_t(x_t^{i}, a_t^{i}) + \max_a Q_{t+1}(x_{t+1}^{i}, a) \right],\]</span> where <span class="math inline">\(\Lambda_t\)</span> is the Gram matrix. The action-value function is estimated via <span class="math inline">\(Q_t(s, a) \approx \chi_t^\top \eta(s, a)\)</span>.</p>
+<p>LSVI-UCB constructs confidence intervals for the <span class="math inline">\(Q\)</span>-function using the UCB bonus (line 10): <span class="math inline">\(r^{\rm ucb} = \beta \left[ \eta(s, a)^\top \Lambda_t^{-1} \eta(s, a) \right]^{\nicefrac{1}{2}}\)</span>, which measures the epistemic uncertainty of state-action pairs. Theoretical analysis shows that with appropriate choices of <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\lambda\)</span>, LSVI-UCB achieves near-optimal worst-case regret <span class="math inline">\(\tilde{\mathcal{O}}(\sqrt{d^3 T^3 L^3})\)</span>, where <span class="math inline">\(L\)</span> is the total number of steps. Next, we establish a theoretical connection between the exploration bonus in GME and the UCB bonus.</p>
+<p><span id="alg:lsvi-interact" label="alg:lsvi-interact">[alg:lsvi-interact]</span> <span id="alg:lsvi-end-interact" label="alg:lsvi-end-interact">[alg:lsvi-end-interact]</span> <span id="alg:lsvi-train" label="alg:lsvi-train">[alg:lsvi-train]</span> <span id="alg:lsvi-solve" label="alg:lsvi-solve">[alg:lsvi-solve]</span> <span id="alg:lsvi-bonus" label="alg:lsvi-bonus">[alg:lsvi-bonus]</span> <span id="alg:lsvi-end-train" label="alg:lsvi-end-train">[alg:lsvi-end-train]</span></p>
+<h2 id="theoretical-connection-between-gme-and-lsvi-ucb">Theoretical Connection Between GME and LSVI-UCB</h2>
+<p>In linear MDPs, we represent the prior model as a linear combination of state-action encodings, i.e., <span class="math inline">\(s_{t+1} = W^\top \phi(s_t, a_t) + \epsilon_t\)</span>, where <span class="math inline">\(\epsilon_t \sim \mathcal{N}(0, \sigma^2 I)\)</span>, and we assume the parameters follow a prior distribution <span class="math inline">\(W \sim \mathcal{N}(0, \Lambda_0^{-1})\)</span>. We use standard Bayesian analysis to illustrate our conclusions.</p>
+<p>The prior distribution of the parameter matrix <span class="math inline">\(W \in \mathbb{R}^{d \times d}\)</span> is: <span class="math display">\[p(W) = \mathcal{N}(W | \mathbf{0}, \Lambda_0^{-1})\]</span> where <span class="math inline">\(\Lambda_0 = \lambda I\)</span> is the prior variance matrix. Based on the conjugate prior property of Gaussian distributions, the posterior distribution after <span class="math inline">\(t\)</span> observations is updated as follows:</p>
+<p><span class="math display">\[\begin{aligned}
+\Lambda_t &amp;= {\sum_{i=1}^t \phi_i \phi_i^\top} + \Lambda_0 \quad \text{(Variance Matrix Update)} \\
+\hat{W}_t &amp;= \Lambda_t^{-1} \left( \sum_{i=1}^t \phi_i s_{i+1}^\top \right) \quad \text{(Mean Matrix Update)}\end{aligned}\]</span></p>
+<p>where <span class="math inline">\(\phi_i = \phi(s_i, a_i) \in \mathbb{R}^d\)</span> is the state-action feature vector, <span class="math inline">\(s_{i+1} \in \mathbb{R}^d\)</span> is the next-state observation, <span class="math inline">\(\Lambda_t \in \mathbb{R}^{d \times d}\)</span> is the posterior variance matrix, and <span class="math inline">\(\hat{W}_t \in \mathbb{R}^{d \times d}\)</span> is the posterior mean matrix.</p>
+<p>In linear MDPs, assuming the parameter matrix <span class="math inline">\(W\)</span> follows a Gaussian prior <span class="math inline">\(W \sim \mathcal{N}(0, \Lambda_0^{-1})\)</span>, and the latent state <span class="math inline">\(z_t = W \phi(s_t, a_t)\)</span> follows a Gaussian distribution <span class="math inline">\(z_t | \mathcal{D}_t \sim \mathcal{N}(0, \phi_t^\top \Lambda_t^{-1} \phi_t I)\)</span>, there exist constants <span class="math inline">\(\beta_1, \beta_2 &gt; 0\)</span> such that the GME exploration bonus satisfies: <span class="math display">\[\beta_1 \cdot \sqrt{\phi_t^\top \Lambda_t^{-1} \phi_t} \leq r_t^{GME} \leq \beta_2 \cdot \sqrt{\phi_t^\top \Lambda_t^{-1} \phi_t}\]</span> where <span class="math inline">\(\phi_t = \phi(s_t, a_t)\)</span> and <span class="math inline">\(\Lambda_t = \lambda I + \sum_{i=1}^t \phi_i \phi_i^\top\)</span>.</p>
+<p>The exploration bonus in GME is formulated as: <span class="math display">\[\begin{aligned}
+r_t^{\text{GME}} &amp;= \mathcal{H}[p(z_t | \mathcal{D}_t)] + D_{\text{KL}}[p(z_t | \mathcal{D}_t) \| q(z_t | s_t)]\end{aligned}\]</span></p>
+<p>For a Gaussian distribution <span class="math inline">\(p(z_t | \mathcal{D}_t) = \mathcal{N}(\mu_t, \Sigma_t)\)</span>, the entropy is derived as follows: <span class="math display">\[\begin{aligned}
+\mathcal{H}[p(z_t | \mathcal{D}_t)] &amp;= \frac{1}{2} \log \det(2\pi e \Sigma_t) \nonumber \\
+&amp;= \frac{d}{2} \log(2\pi e) + \frac{1}{2} \log \det \Sigma_t \nonumber \\
+&amp;= \frac{d}{2} \log(2\pi e) + \frac{1}{2} \log \det \left( \phi_t^\top \Lambda_t^{-1} \phi_t \cdot I \right) \nonumber \\
+&amp;= \frac{d}{2} \log(2\pi e) + \frac{1}{2} \log \left[ (\phi_t^\top \Lambda_t^{-1} \phi_t)^d \det I \right] \nonumber \\
+&amp;= \frac{d}{2} \log(2\pi e) + \frac{d}{2} \log(\phi_t^\top \Lambda_t^{-1} \phi_t) \nonumber \\
+&amp;\propto \frac{d}{2} \log(\phi_t^\top \Lambda_t^{-1} \phi_t)\end{aligned}\]</span></p>
+<p>The covariance matrix is calculated as follows: <span class="math display">\[\begin{aligned}
+\Sigma_t &amp;= \mathbb{V}[W \phi_t] \\
+&amp;= \mathbb{E}[(W \phi_t - \mathbb{E} W \phi_t)(W \phi_t - \mathbb{E} W \phi_t)^\top] \nonumber \\
+&amp;= \phi_t^\top \mathbb{E}[(W - \hat{W}_t)(W - \hat{W}_t)^\top] \phi_t \nonumber \\
+&amp;= \phi_t^\top \left( \mathbb{E}[WW^\top] - \hat{W}_t \hat{W}_t^\top \right) \phi_t \nonumber \\
+&amp;= \phi_t^\top \Lambda_t^{-1} \phi_t \cdot I \quad \text{(Based on posterior covariance $\mathbb{V}[W] = \Lambda_t^{-1}$)}\end{aligned}\]</span></p>
+<p>The KL divergence term expands to: <span class="math display">\[\begin{aligned}
+D_{\text{KL}}[p \| q] &amp;= \frac{1}{2} \left[ \text{tr}(\Lambda_t^{-1} \phi_t \phi_t^\top) + (\mu_t - \hat{\mu}_t)^\top \Lambda_t (\mu_t - \hat{\mu}_t) \right] \\
+&amp;= \frac{1}{2} \phi_t^\top \Lambda_t^{-1} \phi_t \cdot \text{tr}(I) + \mathcal{O}(\|\phi_t\|^3)\end{aligned}\]</span></p>
+<p>Combining the two terms, we have: <span class="math display">\[\begin{aligned}
+r_t^{GME} &amp;= \frac{d}{2} \log(\phi_t^\top \Lambda_t^{-1} \phi_t) + \frac{d}{2} \phi_t^\top \Lambda_t^{-1} \phi_t + C\end{aligned}\]</span></p>
+<p>Define <span class="math inline">\(v_t = \sqrt{\phi_t^\top \Lambda_t^{-1} \phi_t}\)</span>, then the GME exploration bonus can be rewritten as: <span class="math display">\[\begin{aligned}
+r_t^{\text{GME}} &amp;= \frac{d}{2} \log(v_t^2) + \frac{d}{2} v_t^2 + C \nonumber \\
+&amp;= d \log v_t + \frac{d}{2} v_t^2 + C\end{aligned}\]</span></p>
+<p>Applying the arithmetic-geometric mean (AM-GM) inequality: <span class="math display">\[\begin{aligned}
+\frac{\log v_t + v_t^2 / 2}{2} &amp;\geq \sqrt{\log v_t \cdot v_t^2 / 2} \quad \text{(AM-GM)} \nonumber \\
+\Rightarrow \log v_t + \frac{v_t^2}{2} &amp;\geq \sqrt{2 \log v_t \cdot v_t^2} \nonumber \\
+&amp;= v_t \sqrt{2 \log v_t} \nonumber \\
+&amp;\geq \beta_1 v_t \quad \text{(When $v_t \geq 1$)}\end{aligned}\]</span></p>
+<p>Using the upper bound of the logarithmic function <span class="math inline">\(\log x \leq x - 1\)</span>: <span class="math display">\[\begin{aligned}
+r_t^{\text{GME}} &amp;= d \log v_t + \frac{d}{2} v_t^2 + C \nonumber \\
+&amp;\leq d(v_t - 1) + \frac{d}{2} v_t^2 + C \quad \text{(Applying $\log v_t \leq v_t - 1$)} \nonumber \\
+&amp;= \frac{d}{2} v_t^2 + d v_t + (C - d) \nonumber \\
+&amp;\leq \frac{d}{2} (v_t^2 + 2 v_t) \quad \text{(When $C \leq d$)} \nonumber \\
+&amp;= \frac{d}{2} (v_t + 1)^2 - \frac{d}{2} \nonumber \\
+&amp;\leq \beta_2 d v_t \quad \text{(When $v_t \geq 0$ since $(v_t + 1)^2 \leq 2 v_t^2 + 2$)}\end{aligned}\]</span></p>
+<p>Choosing <span class="math inline">\(\beta_2 = \max\{1, \sqrt{(2C + 2)/d}\}\)</span> yields: <span class="math display">\[r_t^{\text{GME}} \leq \beta_2 \sqrt{\phi_t^\top \Lambda_t^{-1} \phi_t}\]</span></p>
+<p><span>99</span></p>
+<p>Jin, Chi and Yang, Zhuoran and Wang, Zhaoran and Jordan, Michael I. <em>Provably efficient reinforcement learning with linear function approximation</em>. In: Conference on Learning Theory, 2020, pp. 2137–2143. PMLR.</p>
 </body>
 </html>
